@@ -14,14 +14,6 @@ export async function handler(event) {
   try {
     const { prompt } = JSON.parse(event.body || "{}");
 
-    if (!prompt) {
-      return {
-        statusCode: 400,
-        headers: { "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ error: "Kein Prompt angegeben" })
-      };
-    }
-
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -30,18 +22,34 @@ export async function handler(event) {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1500,
         messages: [{ role: "user", content: prompt }]
       })
     });
 
-    const data = await response.json();
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      return {
+        statusCode: 500,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "Ungültige Antwort: " + text.slice(0, 200) })
+      };
+    }
+
+    const content = data.content?.[0]?.text || "";
 
     return {
       statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify(data)
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ result: content })
     };
 
   } catch (err) {
