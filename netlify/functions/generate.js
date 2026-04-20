@@ -1,6 +1,26 @@
 export async function handler(event) {
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "POST, OPTIONS"
+      },
+      body: ""
+    };
+  }
+
   try {
-    const body = JSON.parse(event.body || "{}");
+    const { prompt } = JSON.parse(event.body || "{}");
+
+    if (!prompt) {
+      return {
+        statusCode: 400,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "Kein Prompt angegeben" })
+      };
+    }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -12,7 +32,7 @@ export async function handler(event) {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
-        messages: body.messages || []
+        messages: [{ role: "user", content: prompt }]
       })
     });
 
@@ -20,12 +40,14 @@ export async function handler(event) {
 
     return {
       statusCode: 200,
+      headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify(data)
     };
 
   } catch (err) {
     return {
       statusCode: 500,
+      headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ error: err.message })
     };
   }
