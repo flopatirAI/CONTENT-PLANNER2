@@ -397,8 +397,7 @@ Regeln:
     if (!response.ok) throw new Error(`API Fehler: ${response.status}`);
 
     const data = await response.json();
-    const text = data.content?.map(b => b.text || '').join('') || '';
-    const clean = text.replace(/```json|```/g, '').trim();
+    const clean = (data.result || '').replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
     renderDays(parsed.days || []);
